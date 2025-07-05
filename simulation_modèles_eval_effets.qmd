@@ -199,6 +199,38 @@ scale_y_continuous(breaks = seq(0, 0.05, 0.01))
 
 ```
 
+### Modèle lm avec une interaction période et groupe seulement sans effets fixes
+
+```{r}
+#| label: modele_lm_periode_groupe_interaction_seulement
+#| include: true
+# modèle linéaire avec une interaction période et groupe seulement
+model_lm_inter_only <- lm(rf ~ period : group, data = data)
+sjPlot::tab_model(model_lm_inter_only, 
+                show.ci = FALSE, 
+                digits = 3,
+                show.se = TRUE, 
+                show.stat = TRUE, 
+                show.p = TRUE,
+                pred.labels = c("(Intercept)", "Interaction période: groupe test"),
+                dv.labels = "Modèle linéaire avec interaction seulement")
+
+# performance du modèle
+# performance::check_model(model_lm_inter_only)
+# plot model results
+sjPlot::plot_model(model_lm_inter_only, 
+                show.values = TRUE, 
+                show.p = TRUE, 
+                value.offset = .3,
+                title = "Modèle linéaire avec interaction seulement",
+                ci.lvl = 0.95
+) +
+coord_cartesian(ylim = c(0, -0.05))   
+
+```
+
+
+
 ### Modéle lm avec effets periode et groupe avec interaction
 
 > L'interaction groupe test \[0, 1\] x \[0, 1\] donne un effet de +0.05 sur les cuves test
@@ -307,44 +339,39 @@ data_var_summary |>
   )
 ```
 
-### Modéle lm avec effets période et groupe sans interaction avec variabilité
+### Modéle lmer avec effets période et groupe avec interaction 
 
 ```{r}
-#| label: modele_lm_periode_groupe_with_variability
+#| label: modele_lmer_periode_groupe_with_interaction
 #| include: true
-# modèle linéaire avec effets de période et de groupe sans interaction avec variabilité
-model_lm_ss_inter_var <- lm(rf ~ period + group, data = data_var)
-sjPlot::tab_model(model_lm_ss_inter_var, 
+# modèle linéaire hierarchique lmer avec effets de période et de groupe avec interaction
+model_lmer_avec_inter <- lme4::lmer(rf ~ period*group + (1 | tank) + (1| date), data = data_var)
+sjPlot::tab_model(model_lmer_avec_inter, 
                 show.ci = FALSE, 
                 digits = 3,
                 show.se = TRUE, 
                 show.stat = TRUE, 
                 show.p = TRUE,
-                pred.labels = c("(Intercept)", "Période après intervention", "Groupe test"),
-                dv.labels = "Modèle linéaire sans interaction avec variabilité")
-# performance du modèle
-# performance::check_model(model_lm_ss_inter_var)
-# plot model results
-sjPlot::plot_model(model_lm_ss_inter_var, 
-                show.values = TRUE, 
-                show.p = TRUE, 
-                value.offset = .3,
-                title = "Modèle linéaire sans interaction avec variabilité",
-                ci.lvl = 0.95
-) +
-coord_cartesian(ylim = c(0, 0.05)) 
+                pred.labels = c("(Intercept)", "Période après intervention", "Groupe test", "Interaction période: groupe test"),
+                dv.labels = "Modèle linéaire hierarchique avec interaction")
 ```
 
-### Modéle lm avec effets période et groupe avec interaction avec variabilité
 
-\`\`\`{r} #\| label: modele_lm_periode_groupe_interaction_with_variability #\| include:
-true \# modèle linéaire avec effets de période et de groupe avec interaction avec
-variabilité model_lm_avec_inter_var \<- lm(rf \~ period \* group, data = data_var)
-sjPlot::tab_model(model_lm_avec_inter_var, show.ci = FALSE, digits = 4, show.se = TRUE,
-show.stat = TRUE, show.p = TRUE, pred.labels = c("(Intercept)", "Période après
-intervention", "Groupe test", "Interaction période: groupe test"), dv.labels = "Modèle
-linéaire avec interaction avec variabilité") \# performance du modèle \#
-performance::check_model(model_lm_avec_inter_var) \# plot model results
-sjPlot::plot_model(model_lm_avec_inter_var, show.values = TRUE, show.p = TRUE,
-value.offset = .3, title = "Modèle linéaire avec interaction avec variabilité", ci.lvl =
-0.95 )
+
+### Modèle lm avec effets période et groupe avec interaction pour référence
+
+```{r}
+#| label: modele_lm_periode_groupe_interaction_with_variability
+#| include: true
+# modèle linéaire avec effets de période et de groupe avec interaction pour référence
+model_lm_avec_inter_var <- lm(rf ~ period * group, data = data_var)
+sjPlot::tab_model(model_lm_avec_inter_var, 
+                show.ci = FALSE, 
+                digits = 3,
+                show.se = TRUE, 
+                show.stat = TRUE, 
+                show.p = TRUE,
+                pred.labels = c("(Intercept)", "Période après intervention", "Groupe test", "Interaction période: groupe test"),
+                dv.labels = "Modèle linéaire avec interaction pour référence")
+
+```
