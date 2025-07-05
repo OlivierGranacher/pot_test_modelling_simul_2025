@@ -1,0 +1,350 @@
+---
+title: "Evaluation des modèles pour les effets de tests de cuves"
+format: 
+    html:
+        theme: quarto
+        toc: true
+        toc-depth: 2
+        toc-location: left
+        number-sections: true
+        code-fold: true
+fig-align: left
+fig-asp: 0.618
+execute:
+  echo: false
+  warning: false
+  message: false
+  include: false
+  eval: true
+author: "Olivier Granacher"
+date:last-modified: "`r format(Sys.time(), '%d %B %Y')`"
+---
+
+## Objectif
+
+L'objectif de ce document est d'évaluer les modèles de simulation pour les effets des
+tests de cuves. Nous allons utiliser les données simulées pour comparer les performances
+des différents modèles.
+
+## Key Points
+
+> 1.  **Ordonner les facteurs** dans le bon ordre pour les modèles linéaires : ref/essai
+>     et avant/après intervention.
+> 2.  Utiliser des modèles linéaires avec des effets de période et de groupe **avec
+>     interaction**; l'**interaction période:groupe** permet de capturer l'effet du test
+>     sur les cuves après la date d'intervention. Les modéles sans interaction ne donnent
+>     pas le résultat correct. L'interprétation est que l'interaction groupe:période
+>     (cuves test:période test) permet d'isoler l'effet du test sur les cuves de test
+>     indépendamment des facteurs groupe hors période test et période hors groupe test.
+
+## Données simulées simulées par Copilot
+
+Détails de la simulation :
+
+-   Nombre de cuves : 120 (60 test, 60 témoins)
+
+-   Période : 60 jours autour du 1er juin 2023
+
+-   Effet de l’intervention : **+0.5** sur les cuves test après la date d'intervention :
+    Passage de -0.2 par rapport à la référence à +0.3 par rapport à la référence
+
+-   Dispersion (écart-type) : 1% du rendement moyen, soit 0.0093
+
+<!-- -->
+
+-   **Avant l'intervention**, les cuves test ont un rendement moyen de 0.92 et les cuves
+    témoins de 0.93; après **l'intervention** les cuves test ont un rendement moyen de
+    0.95 et les cuves témoins de 0.92
+
+Colonnes du fichier :
+
+-   tank : identifiant de la cuve
+
+-   date : date de la mesure
+
+-   rf : rendement simulé
+
+-   \- group : test ou control
+
+-   period : before ou after intervention
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(gt)
+```
+
+```{r}
+#| label: load_data
+# Chargement des données simulées par Copilot
+data <- read_csv("data/corrected_simulated_yield_data.csv")
+# créer des facteurs pour les variables group et period
+data <- data |> 
+  mutate(
+    group = factor(group, levels = c("control", "test")),
+    period = factor(period, levels = c("before", "after"))
+  )
+```
+
+### Exploration des données
+
+```{r}
+#| label: visualisation_data
+#| include: true
+# Visualisation des données
+# Calculer la moyenne quotidienne par groupe
+daily_avg =  data |> 
+  group_by(date, group) |> 
+  summarise(mean_rf = mean(rf), .groups = "drop")
+
+# Définir la date d'intervention
+intervention_date <- as.Date("2023-06-01")
+
+# Tracer le graphique
+ggplot(daily_avg, aes(x = date, y = mean_rf, color = group)) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = intervention_date, linetype = "dashed", color = "red") +
+  labs(
+    title = "Évolution du rendement moyen (rf) par groupe",
+    x = "Date",
+    y = "Rendement moyen (rf)",
+    color = "Groupe"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+#| label: valeurs_rf_cuves
+#| include: true
+# Tracer la moyenne et l'etendue  de rf pour chaque cuve pour chaque période
+data |> 
+  group_by(tank, period, group) |> 
+  summarise(mean_rf = mean(rf), min_rf = min(rf), max_rf = max(rf), .groups = "drop") |> 
+  ggplot(aes(x = tank, y = mean_rf, color = group)) +
+  facet_wrap(~ period, scales = "free_x") +
+  geom_point() +
+  geom_errorbar(aes(ymin = min_rf, ymax = max_rf), width = 0.2) +
+  labs(
+    title = "Rendement moyen (rf) par cuve",
+    x = "Cuve",
+    y = "Rendement moyen (rf)",
+    color = "Groupe"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank()
+  ) 
+```
+
+```{r}
+#| label: valeurs moyennes rf par période et groupe
+#| include: true
+# Calculer la moyenne de rf par période et groupe
+data_summary <- data |> 
+  group_by(period, group) |> 
+  summarise(mean_rf = mean(rf), .groups = "drop")
+# table des moyennes de rf par période et groupe (gt)
+data_summary |> 
+  gt() |> 
+  tab_header(
+    title = "Moyenne de rf par période et groupe"
+  ) |> 
+  cols_label(
+    period = "Période",
+    group = "Groupe",
+    mean_rf = "Rendement moyen (rf)"
+  ) |> 
+  fmt_number(
+    columns = vars(mean_rf),
+    decimals = 3
+  )
+
+```
+
+## Evaluation des modèles sans variabilité
+
+### Modéle lm avec effets période et groupe sans interaction
+
+> L'effet du test est calculé correctement en sommant les effets de période après et de
+> groupe test.
+
+```{r}
+#| label: modele_lm_periode_groupe
+#| include: true
+# modèle linéaire avec effets de période et de groupe
+model_lm_ss_inter <- lm(rf ~ period + group, data = data)
+sjPlot::tab_model(model_lm_ss_inter, 
+                show.ci = FALSE, 
+                digits = 3,
+                show.se = TRUE, 
+                show.stat = TRUE, 
+                show.p = TRUE,
+                pred.labels = c("(Intercept)", "Période après intervention", "Groupe test"),
+                dv.labels = "Modèle linéaire sans interaction")
+# performance du modèle
+# performance::check_model(model_lm_ss_inter)
+# plot model results
+sjPlot::plot_model(model_lm_ss_inter, 
+                show.values = TRUE, 
+                show.p = TRUE, 
+                value.offset = .3,
+                title = "Modèle linéaire sans interaction",
+                ci.lvl = 0.95
+) +
+coord_cartesian(ylim = c(0, 0.05)) +
+scale_y_continuous(breaks = seq(0, 0.05, 0.01)) 
+
+
+```
+
+### Modéle lm avec effets periode et groupe avec interaction
+
+> L'interaction groupe test \[0, 1\] x \[0, 1\] donne un effet de +0.05 sur les cuves test
+> après la date d'intervention.
+>
+> L'effet *Periode Après* donne l'effet du temps indépendamment du test (Période après x
+> groupe test) et du groupe (effet test) c'est à dire la baisse pendant la date de
+> l'intervention du groupe de contrôle (-0.01)
+>
+> L'effet *Groupe test* donne l'effet du groupe indépendamment du test (Période après x
+> groupe test) et de l'effet du temps, c'est à dire l'écart test/ groupe avant (-0.02)
+
+```{r}
+#| label: modele_lm_periode_groupe_interaction
+#| include: true
+# modèle linéaire avec effets de période et de groupe avec interaction
+model_lm_avec_inter <- lm(rf ~ period * group, data = data)
+sjPlot::tab_model(model_lm_avec_inter, 
+                show.ci = FALSE, 
+                digits = 3,
+                show.se = TRUE, 
+                show.stat = TRUE, 
+                show.p = TRUE,
+                pred.labels = c("(Intercept)", "Période après intervention", "Groupe test", "Interaction période: groupe test"),
+                dv.labels = "Modèle linéaire avec interaction")
+```
+
+## Evaluation des modèles avec variabilité
+
+```{r}
+#| label: load_data_with_variability
+data_var <- read_csv("data/simulated_yield_data_with_variability.csv") |> 
+  mutate(
+    group = factor(group, levels = c("control", "test")),
+    period = factor(period, levels = c("before", "after"))
+  )
+
+```
+
+### Visualisation des données avec variabilité
+
+```{r}
+#| label: visualisation_data_with_variability
+#| include: true
+# Evolution du rendement moyen (rf) par groupe avec variabilité
+data_var |> 
+  group_by(date, group) |> 
+  summarise(mean_rf = mean(rf), .groups = "drop") |> 
+  ggplot(aes(x = date, y = mean_rf, color = group)) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = intervention_date, linetype = "dashed", color = "red") +
+  labs(
+    title = "Évolution du rendement moyen (rf) par groupe avec variabilité",
+    x = "Date",
+    y = "Rendement moyen (rf)",
+    color = "Groupe"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+#| label: valeurs_rf_cuves_with_variability
+#| include: true
+# Tracer la moyenne et l'etendue  de rf pour chaque cuve pour chaque période avec variabilité
+data_var |> 
+  group_by(tank, period, group) |> 
+  summarise(mean_rf = mean(rf), min_rf = min(rf), max_rf = max(rf), .groups = "drop") |> 
+  ggplot(aes(x = tank, y = mean_rf, color = group)) +
+  facet_wrap(~ period, scales = "free_x") +
+  geom_point() +
+  geom_errorbar(aes(ymin = min_rf, ymax = max_rf), width = 0.2) +
+  labs(
+    title = "Rendement moyen (rf) par cuve avec variabilité",
+    x = "Cuve",
+    y = "Rendement moyen (rf)",
+    color = "Groupe"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank()
+  )
+```
+
+```{r}
+#| label: valeurs moyennes rf par période et groupe avec variabilité
+#| include: true
+# Calculer la moyenne de rf par période et groupe avec variabilité
+data_var_summary <- data_var |> 
+  group_by(period, group) |> 
+  summarise(mean_rf = mean(rf), .groups = "drop")
+# table des moyennes de rf par période et groupe avec variabilité (gt)
+data_var_summary |> 
+  gt() |> 
+  tab_header(
+    title = "Moyenne de rf par période et groupe avec variabilité"
+  ) |> 
+  cols_label(
+    period = "Période",
+    group = "Groupe",
+    mean_rf = "Rendement moyen (rf)"
+  ) |> 
+  fmt_number(
+    columns = vars(mean_rf),
+    decimals = 3
+  )
+```
+
+### Modéle lm avec effets période et groupe sans interaction avec variabilité
+
+```{r}
+#| label: modele_lm_periode_groupe_with_variability
+#| include: true
+# modèle linéaire avec effets de période et de groupe sans interaction avec variabilité
+model_lm_ss_inter_var <- lm(rf ~ period + group, data = data_var)
+sjPlot::tab_model(model_lm_ss_inter_var, 
+                show.ci = FALSE, 
+                digits = 3,
+                show.se = TRUE, 
+                show.stat = TRUE, 
+                show.p = TRUE,
+                pred.labels = c("(Intercept)", "Période après intervention", "Groupe test"),
+                dv.labels = "Modèle linéaire sans interaction avec variabilité")
+# performance du modèle
+# performance::check_model(model_lm_ss_inter_var)
+# plot model results
+sjPlot::plot_model(model_lm_ss_inter_var, 
+                show.values = TRUE, 
+                show.p = TRUE, 
+                value.offset = .3,
+                title = "Modèle linéaire sans interaction avec variabilité",
+                ci.lvl = 0.95
+) +
+coord_cartesian(ylim = c(0, 0.05)) 
+```
+
+### Modéle lm avec effets période et groupe avec interaction avec variabilité
+
+\`\`\`{r} #\| label: modele_lm_periode_groupe_interaction_with_variability #\| include:
+true \# modèle linéaire avec effets de période et de groupe avec interaction avec
+variabilité model_lm_avec_inter_var \<- lm(rf \~ period \* group, data = data_var)
+sjPlot::tab_model(model_lm_avec_inter_var, show.ci = FALSE, digits = 4, show.se = TRUE,
+show.stat = TRUE, show.p = TRUE, pred.labels = c("(Intercept)", "Période après
+intervention", "Groupe test", "Interaction période: groupe test"), dv.labels = "Modèle
+linéaire avec interaction avec variabilité") \# performance du modèle \#
+performance::check_model(model_lm_avec_inter_var) \# plot model results
+sjPlot::plot_model(model_lm_avec_inter_var, show.values = TRUE, show.p = TRUE,
+value.offset = .3, title = "Modèle linéaire avec interaction avec variabilité", ci.lvl =
+0.95 )
