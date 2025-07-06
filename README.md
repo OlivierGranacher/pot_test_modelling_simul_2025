@@ -46,6 +46,13 @@ sjPlot::tab_model(model_lmer_avec_inter,
                 dv.labels = "Modèle linéaire hierarchique avec interaction")
 ```
 
+### Graphique
 ```{R}
-
+sjPlot::plot_model(model_lmer_avec_inter, 
+                type = "pred", 
+                show.data = TRUE, 
+                show.p = TRUE, 
+                pred.labels = c("(Intercept)", "Période après intervention", "Groupe test", "Interaction période: groupe test"),
+                dv.labels = "Modèle linéaire hierarchique avec interaction")
+                
 ```
