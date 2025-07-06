@@ -5,7 +5,7 @@ générées par Copilot.
 
 ## Données Type
 
-![](simulation_modèles_eval_effets_files/figure-html\visualisation_data_with_variability-1.png){fig-align="left"}
+![](simulation_modèles_eval_effets_files/figure-html/visualisation_data_with_variability-1.png){fig-align="left"}
 
 ## Modèle
 
@@ -33,7 +33,7 @@ les cuves. Le terme `(1 | date)` permet de prendre en compte la variabilité tem
 
 ## Visualisation des résultats
 
-### Table 
+### Table
 
 ```{R}
 sjPlot::tab_model(model_lmer_avec_inter, 
