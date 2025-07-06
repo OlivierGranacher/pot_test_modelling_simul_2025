@@ -1,10 +1,10 @@
 ---
 title: "Evaluation des modèles pour les effets de tests de cuves"
 format: 
-    html:
+    pdf:
         theme: quarto
         toc: true
-        toc-depth: 2
+        toc-depth: 3
         toc-location: left
         number-sections: true
         code-fold: true
@@ -229,8 +229,6 @@ coord_cartesian(ylim = c(0, -0.05))
 
 ```
 
-
-
 ### Modéle lm avec effets periode et groupe avec interaction
 
 > L'interaction groupe test \[0, 1\] x \[0, 1\] donne un effet de +0.05 sur les cuves test
@@ -339,14 +337,14 @@ data_var_summary |>
   )
 ```
 
-### Modéle lmer avec effets période et groupe avec interaction 
+### Modéle lmer avec effets période et groupe avec interaction
 
 ```{r}
 #| label: modele_lmer_periode_groupe_with_interaction
 #| include: true
 # modèle linéaire hierarchique lmer avec effets de période et de groupe avec interaction
-model_lmer_avec_inter <- lme4::lmer(rf ~ period*group + (1 | tank) + (1| date), data = data_var)
-sjPlot::tab_model(model_lmer_avec_inter, 
+model_lmer_avec_inter = lme4::lmer(rf ~ period*group + (1 | tank) + (1| date), data = data_var)
+tab_res_final = sjPlot::tab_model(model_lmer_avec_inter, 
                 show.ci = FALSE, 
                 digits = 3,
                 show.se = TRUE, 
@@ -354,9 +352,32 @@ sjPlot::tab_model(model_lmer_avec_inter,
                 show.p = TRUE,
                 pred.labels = c("(Intercept)", "Période après intervention", "Groupe test", "Interaction période: groupe test"),
                 dv.labels = "Modèle linéaire hierarchique avec interaction")
+tab_res_final
+# Plot des résultats du modèle lmer avec interaction
+sjPlot::plot_model(model_lmer_avec_inter, 
+                show.values = TRUE, 
+                show.p = TRUE, 
+                value.offset = .3,
+                title = "Modèle linéaire hierarchique avec interaction",
+                ci.lvl = 0.95
+) 
+
+# saving html table
+gt::gt_save(tab_res_final, 
+                filename = "images/tab_res_final.png"),
+                expand = 10)
+# Plot model results
+sjPlot::plot_model(model_lmer_avec_inter, 
+                show.values = TRUE, 
+                show.p = TRUE, 
+                value.offset = .3,
+                title = "Modèle linéaire hierarchique avec interaction",
+                ci.lvl = 0.95
+) +
+  coord_cartesian(ylim = c(-0.1, 0.1)) +
+  scale_y_continuous(breaks = seq(-0.1, 0.1, 0.02 |> )) 
+
 ```
-
-
 
 ### Modèle lm avec effets période et groupe avec interaction pour référence
 
