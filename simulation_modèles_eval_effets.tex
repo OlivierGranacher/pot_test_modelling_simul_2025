@@ -185,7 +185,7 @@ pour comparer les performances des différents modèles.
 \section{Données simulées simulées par
 Copilot}\label{donnuxe9es-simuluxe9es-simuluxe9es-par-copilot}
 
-Détails de la simul3ation :
+Détails de la simulation :
 
 \begin{itemize}
 \item
@@ -372,30 +372,39 @@ after & test & $0.947$ \\
 \subsection{Modéle lmer avec effets période et groupe avec
 interaction}\label{moduxe9le-lmer-avec-effets-puxe9riode-et-groupe-avec-interaction}
 
+\includegraphics{simulation_modèles_eval_effets_files/figure-pdf/modele_lmer_periode_groupe_with_interaction-1.pdf}
+
+\includegraphics{simulation_modèles_eval_effets_files/figure-pdf/modele_lmer_periode_groupe_with_interaction-2.pdf}
+
 \subsection{Modèle lm avec effets période et groupe avec interaction
 pour
 référence}\label{moduxe8le-lm-avec-effets-puxe9riode-et-groupe-avec-interaction-pour-ruxe9fuxe9rence}
 
-\begin{longtable}[]{@{}ccccc@{}}
+\begin{longtable}[]{@{}cccccc@{}}
 \toprule\noalign{}
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-~ & \multicolumn{4}{c@{}}{%
+~ & \multicolumn{5}{c@{}}{%
 Modèle linéaire avec interaction pour référence} \\
-Predictors & Estimates & std. Error & Statistic & p \\
-(Intercept) & 0.928 & 0.001 & 1230.901 & \textbf{\textless0.001} \\
-Période après intervention & -0.010 & 0.001 & -9.301 &
+Predictors & Estimates & std. Error & CI & Statistic & p \\
+(Intercept) & 0.928 & 0.001 & -Inf~--~Inf & 1230.901 &
 \textbf{\textless0.001} \\
-Groupe test & -0.022 & 0.001 & -20.488 & \textbf{\textless0.001} \\
-Interaction période: groupe test & 0.050 & 0.002 & 33.280 &
+Période après intervention & -0.010 & 0.001 & -Inf~--~Inf & -9.301 &
 \textbf{\textless0.001} \\
-Observations & \multicolumn{4}{l@{}}{%
+Groupe test & -0.022 & 0.001 & -Inf~--~Inf & -20.488 &
+\textbf{\textless0.001} \\
+Interaction période: groupe test & 0.050 & 0.002 & -Inf~--~Inf & 33.280
+& \textbf{\textless0.001} \\
+Observations & \multicolumn{5}{l@{}}{%
 7200} \\
 R\textsuperscript{2} / R\textsuperscript{2} adjusted &
-\multicolumn{4}{l@{}}{%
+\multicolumn{5}{l@{}}{%
 0.175 / 0.175} \\
 \end{longtable}
+
+\section{Fonction pour extraire le terme
+d'interaction}\label{fonction-pour-extraire-le-terme-dinteraction}
 
 
 
