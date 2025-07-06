@@ -5,7 +5,7 @@ générées par Copilot.
 
 ## Données Type
 
-![](simulation_modèles_eval_effets_files/figure-html/visualisation_data_with_variability-1.png){fig-align="left"}
+![](simulation_modèles_eval_effets_files/figure-html/visualisation_data_with_variability-1.png)
 
 ## Modèle
 
@@ -47,6 +47,7 @@ sjPlot::tab_model(model_lmer_avec_inter,
 ```
 
 ### Graphique
+
 ```{R}
 sjPlot::plot_model(model_lmer_avec_inter, 
                 type = "pred", 
@@ -54,5 +55,5 @@ sjPlot::plot_model(model_lmer_avec_inter,
                 show.p = TRUE, 
                 pred.labels = c("(Intercept)", "Période après intervention", "Groupe test", "Interaction période: groupe test"),
                 dv.labels = "Modèle linéaire hierarchique avec interaction")
-                
+
 ```
