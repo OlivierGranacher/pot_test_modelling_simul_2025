@@ -61,12 +61,16 @@ sjPlot::plot_model(model_lmer_avec_inter,
 ## Function d'extraction des résultats des modèles linéaires transformés ou non transformés
 
 ```{r, echo = true, eval = FALSE}
+#| label: extract_interaction_term
+#| include: false
+# Fonction pour extraire le terme d'interaction
 extract_ci_inter_model = function(
   model,
   pattern = ":", # motif pour sélection des termes
   z = 1.96, # valeur z pour l'intervalle de confiance à 95%
   log_resp = F, # si la réponse est log-transformée
-  digits = 3 # nombre de décimales pour l'affichage
+  digits = 3, # nombre de décimales pour l'affichage
+  add_intercept = T # si l'intercept doit être ajouté
 ) {
   coef_full = summary(model)$coefficients |>
     as.data.frame() |>
@@ -87,9 +91,23 @@ extract_ci_inter_model = function(
         ci_lower = Estimate - 1.96 * `Std. Error`,
         ci_upper = Estimate + 1.96 * `Std. Error`
       ) |>
-      select(term, Estimate, ci_lower, ci_upper) |>
+      select(term, Estimate, ci_lower, ci_upper) 
+      
+    if (add_intercept) {
+      # Ajout de l'intercept si demandé
+      intercept = coef_full |>
+        filter(term == "(Intercept)") |>
+        pull(Estimate)
+      coef_sel = coef_sel |>
+        mutate(
+          Estimate = if_else(term == "(Intercept)", Estimate, Estimate + intercept),
+          ci_lower = if_else(term == "(Intercept)", ci_lower, ci_lower + intercept),
+          ci_upper = if_else(term == "(Intercept)", ci_upper, ci_upper + intercept)
+        ) 
+    }
+    # Arrondi des coefficients
+    coef_sel = coef_sel |>
       mutate(
-        # digits = 3
         Estimate = round(Estimate, digits),
         ci_lower = round(ci_lower, digits),
         ci_upper = round(ci_upper, digits)
@@ -131,14 +149,34 @@ extract_ci_inter_model = function(
           exp(ci_upper), # exponentiation de l'intercept
           function_exp(ci_upper) # exponentiation des autres coefficients
         )
-      ) |>
+      ) 
+      
+      if (add_intercept) {
+      # Ajout de l'intercept si demandé
+      coef_sel = coef_sel |>
+        mutate(
+          Estimate = if_else(term == "(Intercept)", Estimate, Estimate + intercept),
+          ci_lower = if_else(term == "(Intercept)", ci_lower, ci_lower + intercept),
+          ci_upper = if_else(term == "(Intercept)", ci_upper, ci_upper + intercept)
+        ) 
+    }
+    # Arrondi des coefficients
+    coef_sel = coef_sel |>
       mutate(
-        # digits = 3
         Estimate = round(Estimate, digits),
         ci_lower = round(ci_lower, digits),
         ci_upper = round(ci_upper, digits)
       )
+    
     return(coef_sel)
   }
-}
+} # end of function
+# test of function
+extract_ci_inter_model(
+  model_lmer_avec_inter,
+  pattern = ".",
+  z = 1.96,
+  log_resp = F,
+)
+
 ```
