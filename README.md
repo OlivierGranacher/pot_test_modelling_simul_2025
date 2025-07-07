@@ -70,7 +70,7 @@ extract_ci_inter_model = function(
 ) {
   coef_full = summary(model)$coefficients |>
     as.data.frame() |>
-    rownames_to_column("term")
+    tibble::rownames_to_column("term")
   # vérification si des termes sont sélectionnés
   if (sum(stringr::str_detect(coef_full$term, pattern) == 0)) {
     stop(
@@ -140,4 +140,5 @@ extract_ci_inter_model = function(
       )
     return(coef_sel)
   }
+}
 ```
